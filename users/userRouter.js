@@ -1,8 +1,22 @@
-const express = 'express';
-const userDb = require('./userDb');
+const express = require('express');
 const postDb = require('../posts/postDb');
+const userDb = require('./userDb');
+
 
 const router = express.Router();
+
+router.post('/:id/posts', validateUserId, validatePost, async(req, res) => {
+    const postToAdd = {
+        text: req.body.text,
+        user_id: req.user
+    }
+    try {
+        const newPost = await postDb.insert(postToAdd);
+        return res.status(201).json(newPost);
+    } catch {
+        return res.status(500).json({message: 'internal server error'})
+    }
+});
 
 router.post('/', validateUser, async(req, res) => {
     try {
@@ -13,18 +27,11 @@ router.post('/', validateUser, async(req, res) => {
     }
 });
 
-router.post('/:id/posts', validateUserId, validatePost, async(req, res) => {
-    try {
-        const newPost = await postDb.insert(req.body)
-        return res.status(201).json(newPost);
-    } catch {
-        return res.status(500).json({message: 'internal server error'})
-    }
-});
+
 
 router.get('/', async(req, res) => {
     try {
-        const users = userDb.get();
+        const users = await userDb.get();
         res.status(200).json(users)
     } catch {
         return res.status(500).json({message: 'internal server error'})
@@ -69,15 +76,21 @@ router.put('/:id', validateUserId, validateUser, async(req, res) => {
 
 //custom middleware
 
-function validateUserId(req, res, next) {
+function validateUserId (req, res, next) {
     const {id} = req.params;
   
-    if(id) {
-      req.user = id;
-      next()
-    } else {
-      return res.status(400).json({message: "invalid user id"})
-    }
+    userDb.getById(id)
+    .then(data => {
+        if (!data) {
+            return res.json({ message: "invalid user id" })
+        } else {
+            req.user = id;
+            next();
+        }
+    })
+    
+    
+        
 }
   
 function validateUser(req, res, next) {
@@ -93,15 +106,15 @@ function validateUser(req, res, next) {
 }
   
 function validatePost(req, res, next) {
-const {text} = req.body;
+    const {text} = req.body;
 
-if(!req.body) {
-    res.status(400).json({ message: "missing post data" })
-} else if (!text) {
-    res.status(400).json({ message: "missing required text field" })
-} else {
-    next();
-}
+    if(!req.body) {
+        res.status(400).json({ message: "missing post data" })
+    } else if (!text) {
+        res.status(400).json({ message: "missing required text field" })
+    } else {
+        next();
+    }
 }
 
 module.exports = router;
