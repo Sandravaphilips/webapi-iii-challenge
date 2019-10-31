@@ -12,4 +12,15 @@ function logger(req, res, next) {
 
 };
 
+function validateUserId(req, res, next) {
+  const {id} = req.params;
+
+  if(id) {
+    req.user = id;
+    next()
+  } else {
+    return res.status(400).json({message: "invalid user id"})
+  }
+}
+
 module.exports = server;
