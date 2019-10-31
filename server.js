@@ -35,4 +35,16 @@ function validateUser(req, res, next) {
   }
 }
 
+function validatePost(req, res, next) {
+  const {text} = req.body;
+
+  if(!req.body) {
+    res.status(400).json({ message: "missing post data" })
+  } else if (!text) {
+    res.status(400).json({ message: "missing required text field" })
+  } else {
+    next();
+  }
+}
+
 module.exports = server;
